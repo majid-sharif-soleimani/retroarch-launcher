@@ -2,7 +2,11 @@ name: Build APK
 
 on:
   push:
+    branches: [main]
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -22,3 +26,14 @@ jobs:
         with:
           name: RetroArchLauncher-apk
           path: app/build/outputs/apk/release/*.apk
+      - name: Publish APK to the apk branch
+        run: |
+          cp app/build/outputs/apk/release/*.apk /tmp/RetroArchLauncher.apk
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git checkout --orphan apk
+          git rm -rfq .
+          cp /tmp/RetroArchLauncher.apk .
+          git add RetroArchLauncher.apk
+          git commit -m "APK build ${GITHUB_SHA::7}"
+          git push -f origin apk
