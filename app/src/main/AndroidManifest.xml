@@ -2,6 +2,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Landscape lock: invisible overlay that forces landscape for every app -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <!-- Optional fallback: lock system rotation if the user allows it -->
+    <uses-permission android:name="android.permission.WRITE_SETTINGS" />
 
     <!-- Android 11+: allow seeing RetroArch -->
     <queries>
@@ -21,7 +27,8 @@
             android:clearTaskOnLaunch="true"
             android:stateNotNeeded="true"
             android:excludeFromRecents="true"
-            android:resumeWhilePausing="true">
+            android:resumeWhilePausing="true"
+            android:screenOrientation="sensorLandscape">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.HOME" />
@@ -29,6 +36,15 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <service
+            android:name=".OrientationService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Keeps the kiosk screen locked in landscape orientation" />
+        </service>
 
         <receiver
             android:name=".BootReceiver"

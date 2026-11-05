@@ -16,3 +16,9 @@ Option B - Android Studio: open the folder, Build > Build APK(s).
 1. Install the APK on the phone (allow "install unknown apps").
 2. Press Home, choose "RetroArch Launcher", tap "Always"
    (or Settings > Apps > Default apps > Home app).
+
+## Landscape lock
+The screen is always kept in landscape, for every app (RetroArch included).
+On first start the launcher opens the "Display over other apps" screen:
+turn it on for RetroArch Launcher and press Back. A small "Landscape lock is on"
+notification stays while the lock is active.

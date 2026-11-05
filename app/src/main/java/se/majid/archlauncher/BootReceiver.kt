@@ -11,6 +11,7 @@ import android.content.Intent
  */
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
+        OrientationService.start(context)
         val home = Intent(context, LauncherActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         try { context.startActivity(home) } catch (_: Exception) {

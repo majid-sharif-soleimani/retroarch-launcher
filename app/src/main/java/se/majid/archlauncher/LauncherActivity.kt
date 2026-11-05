@@ -4,6 +4,8 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
+import android.net.Uri
+import android.provider.Settings
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -34,11 +36,33 @@ class LauncherActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
-        launchTarget(this)
+        if (ensureLandscapePermission()) {
+            OrientationService.start(this)
+            launchTarget(this)
+        }
+    }
+
+    /**
+     * Asks once for "Display over other apps", which the landscape lock needs.
+     * Returns false while the settings screen is being shown.
+     */
+    private fun ensureLandscapePermission(): Boolean {
+        if (OrientationService.canDrawOverlays(this)) return true
+        val prefs = getSharedPreferences("launcher", MODE_PRIVATE)
+        if (prefs.getBoolean("overlay_asked", false)) return true
+        prefs.edit().putBoolean("overlay_asked", true).apply()
+        status.text = "Allow \"Display over other apps\"\nto keep the screen in landscape."
+        return try {
+            startActivity(
+                Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))
+            )
+            false
+        } catch (_: Exception) { true }
     }
 
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
+        if (OrientationService.canDrawOverlays(this)) OrientationService.start(this)
         launchTarget(this)
     }
 
