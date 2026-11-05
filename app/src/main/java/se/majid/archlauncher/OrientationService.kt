@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.content.pm.ServiceInfo
+import android.graphics.Color
 import android.graphics.PixelFormat
 import android.os.Build
 import android.os.IBinder
@@ -63,7 +64,9 @@ class OrientationService : Service() {
             @Suppress("DEPRECATION") WindowManager.LayoutParams.TYPE_PHONE
 
         val params = WindowManager.LayoutParams(
-            0, 0, type,
+            // 1x1 (not 0x0): a zero-size window may never get a visible surface,
+            // and newer Android only honours orientation from visible windows.
+            1, 1, type,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                 WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
                 WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
@@ -72,7 +75,7 @@ class OrientationService : Service() {
             gravity = Gravity.TOP or Gravity.START
             screenOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
         }
-        val view = View(this)
+        val view = View(this).apply { setBackgroundColor(Color.TRANSPARENT) }
         try {
             (getSystemService(WINDOW_SERVICE) as WindowManager).addView(view, params)
             overlay = view

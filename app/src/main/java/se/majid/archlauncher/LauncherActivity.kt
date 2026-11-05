@@ -6,6 +6,7 @@ import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
 import android.provider.Settings
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -36,33 +37,48 @@ class LauncherActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
-        if (ensureLandscapePermission()) {
+        if (ensureLandscapePermissions()) {
             OrientationService.start(this)
+            OrientationService.lockSystemRotation(this)
             launchTarget(this)
         }
     }
 
     /**
-     * Asks once for "Display over other apps", which the landscape lock needs.
-     * Returns false while the settings screen is being shown.
+     * The landscape lock needs "Display over other apps" (main method) and
+     * "Modify system settings" (backup method). Each missing one is asked
+     * for once per boot, so a missed prompt is shown again after a restart.
+     * Returns false while a settings screen is being shown.
      */
-    private fun ensureLandscapePermission(): Boolean {
-        if (OrientationService.canDrawOverlays(this)) return true
-        val prefs = getSharedPreferences("launcher", MODE_PRIVATE)
-        if (prefs.getBoolean("overlay_asked", false)) return true
-        prefs.edit().putBoolean("overlay_asked", true).apply()
-        status.text = "Allow \"Display over other apps\"\nto keep the screen in landscape."
+    private fun ensureLandscapePermissions(): Boolean {
+        if (Build.VERSION.SDK_INT < 23) return true
+        if (!Settings.canDrawOverlays(this) && !askedOverlay) {
+            askedOverlay = true
+            if (openSettings(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                    "Turn ON \"Display over other apps\"\nfor RetroArch Launcher, then press Back.")) return false
+        }
+        if (!Settings.System.canWrite(this) && !askedWriteSettings) {
+            askedWriteSettings = true
+            if (openSettings(Settings.ACTION_MANAGE_WRITE_SETTINGS,
+                    "Turn ON \"Modify system settings\"\nfor RetroArch Launcher, then press Back.")) return false
+        }
+        return true
+    }
+
+    private fun openSettings(action: String, message: String): Boolean {
+        status.text = message
         return try {
-            startActivity(
-                Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))
-            )
-            false
-        } catch (_: Exception) { true }
+            startActivity(Intent(action, Uri.parse("package:$packageName")))
+            true
+        } catch (_: Exception) {
+            try { startActivity(Intent(action)); true } catch (_: Exception) { false }
+        }
     }
 
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
-        if (OrientationService.canDrawOverlays(this)) OrientationService.start(this)
+        OrientationService.start(this)
+        OrientationService.lockSystemRotation(this)
         launchTarget(this)
     }
 
@@ -85,6 +101,10 @@ class LauncherActivity : Activity() {
     }
 
     companion object {
+        // Per-process flags: reset on reboot, so missed prompts come back.
+        private var askedOverlay = false
+        private var askedWriteSettings = false
+
         fun startTarget(ctx: Context): Boolean {
             val pm = ctx.packageManager
             val intent = BuildConfig.TARGET_PACKAGES
